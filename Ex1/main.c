@@ -954,8 +954,8 @@ int sweep2(double *Cx_vals_mat, double *Cy_vals_mat, double *fx_vals_mat,
         return 1;
     }
     
-    // free(Ax2);
-        printf("helo\n");
+    printf("helo\n");
+    free(Ax2);
     free(Bx2);
     free(Cx2);
     free(Dx2);
