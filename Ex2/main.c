@@ -315,32 +315,47 @@ int main(int argc, char const *argv[])
         apply_BC(current_Q, x_vals_mat, y_vals_mat);
         dprintINT(iteration);
     }
+
+    for (int j = nj-1; j >=0; j--) {
+            for (int i = 0; i < ni; i++) {
+                if (i == i_LE) {
+                    printf("  ");
+                }
+                double e = current_Q[offset3d(i, j, 3, ni, nj)];
+                double rho = current_Q[offset3d(i, j, 0, ni, nj)]; 
+                double u, v;
+                calculate_u_and_v(&u, &v, current_Q, i, j);
+                double p = calculate_p(e, rho, u, v);
+                printf("%g ", p);
+            }
+            printf("\n");
+        }
     
-    int layer = 2;
+    // int layer = 2;
     // print_layer_of_mat3D(first_Q, layer);
     // print_layer_of_mat3D(current_Q, layer);
 
-    for (int i = 0; i < ni; i++) {
-        for (int j = 0; j < nj; j++) {
-            double U, V;
-            contravariant_velocities(&U, &V, x_vals_mat, y_vals_mat, current_Q, i, j);
-            int index = offset2d(i, j, ni);
-            U_mat[index] = U;
-            V_mat[index] = V;
-        }
-    }
-    FILE *rho_u_fp = fopen("./results/rho_u.txt", "wt");
-    FILE *rho_v_fp = fopen("./results/rho_v.txt", "wt");
-    FILE *x_fp = fopen("./results/x_mat.txt", "wt");
-    FILE *y_fp = fopen("./results/y_mat.txt", "wt");
-    FILE *U_fp = fopen("./results/U_mat.txt", "wt");
-    FILE *V_fp = fopen("./results/V_mat.txt", "wt");
-    output_layer_of_mat3D_to_file(rho_u_fp, current_Q, 1);
-    output_layer_of_mat3D_to_file(rho_v_fp, current_Q, 2);
-    output_mat2D_to_file(x_fp, x_vals_mat);
-    output_mat2D_to_file(y_fp, y_vals_mat);
-    output_mat2D_to_file(U_fp, U_mat);
-    output_mat2D_to_file(V_fp, V_mat);
+    // for (int i = 0; i < ni; i++) {
+    //     for (int j = 0; j < nj; j++) {
+    //         double U, V;
+    //         contravariant_velocities(&U, &V, x_vals_mat, y_vals_mat, current_Q, i, j);
+    //         int index = offset2d(i, j, ni);
+    //         U_mat[index] = U;
+    //         V_mat[index] = V;
+    //     }
+    // }
+    // FILE *rho_u_fp = fopen("./results/rho_u.txt", "wt");
+    // FILE *rho_v_fp = fopen("./results/rho_v.txt", "wt");
+    // FILE *x_fp = fopen("./results/x_mat.txt", "wt");
+    // FILE *y_fp = fopen("./results/y_mat.txt", "wt");
+    // FILE *U_fp = fopen("./results/U_mat.txt", "wt");
+    // FILE *V_fp = fopen("./results/V_mat.txt", "wt");
+    // output_layer_of_mat3D_to_file(rho_u_fp, current_Q, 1);
+    // output_layer_of_mat3D_to_file(rho_v_fp, current_Q, 2);
+    // output_mat2D_to_file(x_fp, x_vals_mat);
+    // output_mat2D_to_file(y_fp, y_vals_mat);
+    // output_mat2D_to_file(U_fp, U_mat);
+    // output_mat2D_to_file(V_fp, V_mat);
     
 /*------------------------------------------------------------*/
 
