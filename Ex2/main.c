@@ -307,29 +307,53 @@ int main(int argc, char const *argv[])
     copy_3Dmat_to_3Dmat(first_Q, current_Q);
 
     
-    for (int iteration = 0; iteration < 5e0; iteration++) {
+    for (int iteration = 0; iteration < 1e0; iteration++) {
         RHS(S, W, current_Q, x_vals_mat, y_vals_mat, J_vals_mat, dxi_dx_mat,
             dxi_dy_mat, deta_dx_mat, deta_dy_mat, s2, rspec, qv, dd);
         advance_Q(next_Q, current_Q, S, x_vals_mat, y_vals_mat);
         copy_3Dmat_to_3Dmat(current_Q, next_Q);
-        apply_BC(current_Q, x_vals_mat, y_vals_mat);
+        // apply_BC(current_Q, x_vals_mat, y_vals_mat);
         dprintINT(iteration);
     }
 
-    for (int j = nj-1; j >=0; j--) {
-            for (int i = 0; i < ni; i++) {
-                if (i == i_LE) {
-                    printf("  ");
-                }
-                double e = current_Q[offset3d(i, j, 3, ni, nj)];
-                double rho = current_Q[offset3d(i, j, 0, ni, nj)]; 
-                double u, v;
-                calculate_u_and_v(&u, &v, current_Q, i, j);
-                double p = calculate_p(e, rho, u, v);
-                printf("%g ", p);
+    // for (int j = nj-1; j >=0; j--) {
+    //         for (int i = 0; i < ni; i++) {
+    //             if (i == i_LE) {
+    //                 printf("  ");
+    //             }
+    //             double e = current_Q[offset3d(i, j, 3, ni, nj)];
+    //             double rho = current_Q[offset3d(i, j, 0, ni, nj)]; 
+    //             double u, v;
+    //             calculate_u_and_v(&u, &v, current_Q, i, j);
+    //             double p = calculate_p(e, rho, u, v);
+    //             printf("%g ", p);
+    //         }
+    //         printf("\n");
+    //     }
+
+        // print_layer_of_mat3D(S, 3);
+
+    double *E = (double *)malloc(sizeof(double) * ni * nj * 4);
+    for (int i_index = 0; i_index < ni; i_index++) {   /* filling the matrix with zeros */
+        for (int j_index = 0; j_index < nj; j_index++) {
+            for (int k_index = 0; k_index < 4; k_index++) {
+                E[offset3d(i_index, j_index, k_index, ni, nj)] = 0;
             }
-            printf("\n");
         }
+    }
+    for (int i = 0; i < ni; i++) {
+        for (int j = 0; j < nj; j++) {
+            calculate_F_hat_at_a_point(&(E[offset3d(i, j, 0, ni, nj)]),
+                                       &(E[offset3d(i, j, 1, ni, nj)]),
+                                       &(E[offset3d(i, j, 2, ni, nj)]),
+                                       &(E[offset3d(i, j, 3, ni, nj)]),
+                                       x_vals_mat, y_vals_mat, current_Q, i, j);
+
+        }
+    }
+    // print_layer_of_mat3D(E, 3);
+    // print_mat2D(dxi_dx_mat);
+
     
     // int layer = 2;
     // print_layer_of_mat3D(first_Q, layer);
