@@ -307,7 +307,7 @@ int main(int argc, char const *argv[])
     copy_3Dmat_to_3Dmat(first_Q, current_Q);
 
     
-    for (int iteration = 0; iteration < 5e3; iteration++) {
+    for (int iteration = 0; iteration < 5e0; iteration++) {
         RHS(S, W, current_Q, x_vals_mat, y_vals_mat, J_vals_mat, dxi_dx_mat,
             dxi_dy_mat, deta_dx_mat, deta_dy_mat, s2, rspec, qv, dd);
         advance_Q(next_Q, current_Q, S, x_vals_mat, y_vals_mat);
@@ -1004,7 +1004,7 @@ int smooth(double *q, double *s, double *jac, double *xx, double *xy,
 void apply_BC(double *Q, double *x_vals_mat, double *y_vals_mat)
 {
     int i, j, k;
-    double J_j0, J_j1, u_j1, v_j1, e_j1, rho_j0, rho_j1, p_j0, e_j0, u_j0, v_j0,
+    double J_j0, J_j1, u_j1, v_j1, p_j1, e_j1, rho_j0, rho_j1, p_j0, e_j0, u_j0, v_j0,
     dx_dxi_j0, dx_deta_j0, dx_deta_j1, dy_dxi_j0, dy_deta_j0, dy_deta_j1,
     dxi_dx_j0, dxi_dx_j1, dxi_dy_j0, dxi_dy_j1, deta_dx_j0, deta_dy_j0,
     U1, V1,
@@ -1048,10 +1048,16 @@ void apply_BC(double *Q, double *x_vals_mat, double *y_vals_mat)
         
         /* p_i,0 */
         e_j1 = Q[offset3d(i, j+1, 3, ni, nj)];
-        p_j0 = calculate_p(e_j1, rho_j1, u_j1, v_j1);
+        p_j1 = calculate_p(e_j1, rho_j1, u_j1, v_j1);
 
         /* e_i,0*/
         e_j0 = p_j0 / (Gamma -1) + 0.5 * rho_j0 * (u_j0 * u_j0 + v_j0 *v_j0);
+        p_j0 = p_j1;
+        
+        /* e_i,0*/
+        e_j0 = p_j0 / (Gamma -1) + 0.5 * rho_j0 * (u_j0 * u_j0 + v_j0 *v_j0);
+        p_j0 = calculate_p(e_j0, rho_j0, u_j0, v_j0);
+        printf("%d,%g, %g, %g, %g\n", i,p_j1, p_j0, e_j1, e_j0);
 
         Q[offset3d(i, j, 0, ni, nj)] = rho_j0;
         Q[offset3d(i, j, 1, ni, nj)] = rho_j0 * u_j0;
