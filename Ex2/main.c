@@ -307,12 +307,12 @@ int main(int argc, char const *argv[])
     copy_3Dmat_to_3Dmat(first_Q, current_Q);
 
     
-    for (int iteration = 0; iteration < 1e0; iteration++) {
+    for (int iteration = 0; iteration < 2e0; iteration++) {
         RHS(S, W, current_Q, x_vals_mat, y_vals_mat, J_vals_mat, dxi_dx_mat,
             dxi_dy_mat, deta_dx_mat, deta_dy_mat, s2, rspec, qv, dd);
         advance_Q(next_Q, current_Q, S, x_vals_mat, y_vals_mat);
         copy_3Dmat_to_3Dmat(current_Q, next_Q);
-        // apply_BC(current_Q, x_vals_mat, y_vals_mat);
+        apply_BC(current_Q, x_vals_mat, y_vals_mat);
         dprintINT(iteration);
     }
 
