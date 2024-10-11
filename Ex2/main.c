@@ -307,7 +307,7 @@ int main(int argc, char const *argv[])
     copy_3Dmat_to_3Dmat(first_Q, current_Q);
 
     
-    for (int iteration = 0; iteration < 5e3; iteration++) {
+    for (int iteration = 0; iteration < 2e0; iteration++) {
         RHS(S, W, current_Q, x_vals_mat, y_vals_mat, J_vals_mat, dxi_dx_mat,
             dxi_dy_mat, deta_dx_mat, deta_dy_mat, s2, rspec, qv, dd);
         advance_Q(next_Q, current_Q, S, x_vals_mat, y_vals_mat);
@@ -316,31 +316,46 @@ int main(int argc, char const *argv[])
         dprintINT(iteration);
     }
     
-    int layer = 2;
-    // print_layer_of_mat3D(first_Q, layer);
-    // print_layer_of_mat3D(current_Q, layer);
-
-    for (int i = 0; i < ni; i++) {
-        for (int j = 0; j < nj; j++) {
-            double U, V;
-            contravariant_velocities(&U, &V, x_vals_mat, y_vals_mat, current_Q, i, j);
-            int index = offset2d(i, j, ni);
-            U_mat[index] = U;
-            V_mat[index] = V;
+    for (int j = nj-1; j >=0; j--) {
+                for (int i = 0; i < ni; i++) {
+                    if (i == i_LE) {
+                        printf("  ");
+                    }
+                    double e = current_Q[offset3d(i, j, 3, ni, nj)];
+                    double rho = current_Q[offset3d(i, j, 0, ni, nj)]; 
+                    double u, v;
+                    calculate_u_and_v(&u, &v, current_Q, i, j);
+                    double p = calculate_p(e, rho, u, v);
+            printf("%g ", p);
         }
+        printf("\n");
     }
-    FILE *rho_u_fp = fopen("./results/rho_u.txt", "wt");
-    FILE *rho_v_fp = fopen("./results/rho_v.txt", "wt");
-    FILE *x_fp = fopen("./results/x_mat.txt", "wt");
-    FILE *y_fp = fopen("./results/y_mat.txt", "wt");
-    FILE *U_fp = fopen("./results/U_mat.txt", "wt");
-    FILE *V_fp = fopen("./results/V_mat.txt", "wt");
-    output_layer_of_mat3D_to_file(rho_u_fp, current_Q, 1);
-    output_layer_of_mat3D_to_file(rho_v_fp, current_Q, 2);
-    output_mat2D_to_file(x_fp, x_vals_mat);
-    output_mat2D_to_file(y_fp, y_vals_mat);
-    output_mat2D_to_file(U_fp, U_mat);
-    output_mat2D_to_file(V_fp, V_mat);
+
+    // int layer = 2;
+    // // print_layer_of_mat3D(first_Q, layer);
+    // // print_layer_of_mat3D(current_Q, layer);
+
+    // for (int i = 0; i < ni; i++) {
+    //     for (int j = 0; j < nj; j++) {
+    //         double U, V;
+    //         contravariant_velocities(&U, &V, x_vals_mat, y_vals_mat, current_Q, i, j);
+    //         int index = offset2d(i, j, ni);
+    //         U_mat[index] = U;
+    //         V_mat[index] = V;
+    //     }
+    // }
+    // FILE *rho_u_fp = fopen("./results/rho_u.txt", "wt");
+    // FILE *rho_v_fp = fopen("./results/rho_v.txt", "wt");
+    // FILE *x_fp = fopen("./results/x_mat.txt", "wt");
+    // FILE *y_fp = fopen("./results/y_mat.txt", "wt");
+    // FILE *U_fp = fopen("./results/U_mat.txt", "wt");
+    // FILE *V_fp = fopen("./results/V_mat.txt", "wt");
+    // output_layer_of_mat3D_to_file(rho_u_fp, current_Q, 1);
+    // output_layer_of_mat3D_to_file(rho_v_fp, current_Q, 2);
+    // output_mat2D_to_file(x_fp, x_vals_mat);
+    // output_mat2D_to_file(y_fp, y_vals_mat);
+    // output_mat2D_to_file(U_fp, U_mat);
+    // output_mat2D_to_file(V_fp, V_mat);
     
 /*------------------------------------------------------------*/
 
@@ -655,8 +670,8 @@ void calculate_E_hat_at_a_point(double *E0, double *E1, double *E2,
     one_over_J = calculate_one_over_jacobian_at_a_point(x_vals_mat, y_vals_mat, i, j);
     dx_deta = first_deriv(x_vals_mat, 'j', i, j);
     dy_deta = first_deriv(y_vals_mat, 'j', i, j);
-    dxi_dx  =   1 / one_over_J * dy_deta;
-    dxi_dy  = - 1 / one_over_J * dx_deta;
+    dxi_dx  =   (1 / one_over_J) * dy_deta;
+    dxi_dy  = - (1 / one_over_J) * dx_deta;
     energy = Q[offset3d(i, j, 3, ni, nj)];
     rho = Q[offset3d(i, j, 0, ni, nj)];
     p = calculate_p(energy, rho, u, v);
@@ -746,11 +761,6 @@ void RHS(double *S, double *W, double *Q, double *x_vals_mat, double *y_vals_mat
             for (k = 0; k < 4; k++) {
                 S[offset3d(i, j, k, ni, nj)] = 0;
             }
-        }
-    }
-    for (i = 0; i < max_ni_nj; i++) {
-        for (j = 0; j < 4; j++) {
-            W[offset2d(i, j, max_ni_nj)] = 0;
         }
     }
 
