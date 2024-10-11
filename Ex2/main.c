@@ -97,6 +97,8 @@ int smooth(double *q, double *s, double *jac, double *xx, double *xy,
 void apply_BC(double *Q, double *x_vals_mat, double *y_vals_mat);
 void output_mat2D_to_file(FILE *fp, double *data);
 void output_layer_of_mat3D_to_file(FILE *fp, double *data, int layer);
+double calculate_S_norm(double *S);
+
 
 /* global variables */
 int ni, nj, max_ni_nj, i_TEL, i_LE, i_TEU, j_TEL, j_LE, j_TEU;
@@ -109,7 +111,8 @@ int main(int argc, char const *argv[])
     char input_dir[MAXDIR], mesh_dir[MAXDIR], current_word[MAXWORD];
     double *x_vals_mat, *y_vals_mat, *J_vals_mat, *first_Q,
     *current_Q, *next_Q, *S, *W, *dxi_dx_mat, *dxi_dy_mat, *deta_dx_mat,
-    *deta_dy_mat, *s2, *rspec, *qv, *dd, *U_mat, *V_mat;
+    *deta_dy_mat, *s2, *rspec, *qv, *dd, *U_mat, *V_mat,
+    max_S_norm, current_S_norm;
 
 /* getting the input directory and mesh directory*/
     if (--argc != 2) {
@@ -307,29 +310,40 @@ int main(int argc, char const *argv[])
     copy_3Dmat_to_3Dmat(first_Q, current_Q);
 
     
-    for (int iteration = 0; iteration < 2e0; iteration++) {
-        RHS(S, W, current_Q, x_vals_mat, y_vals_mat, J_vals_mat, dxi_dx_mat,
-            dxi_dy_mat, deta_dx_mat, deta_dy_mat, s2, rspec, qv, dd);
+    for (int iteration = 0; iteration < 5e0; iteration++) {
+        RHS(S, W, current_Q, x_vals_mat, y_vals_mat, J_vals_mat, 
+            dxi_dx_mat, dxi_dy_mat, deta_dx_mat, deta_dy_mat,
+            s2, rspec, qv, dd);
+        current_S_norm = calculate_S_norm(S);
+
+        if (max_S_norm < fabs(current_S_norm)) {
+            max_S_norm = fabs(current_S_norm);
+        }
         advance_Q(next_Q, current_Q, S, x_vals_mat, y_vals_mat);
         copy_3Dmat_to_3Dmat(current_Q, next_Q);
         apply_BC(current_Q, x_vals_mat, y_vals_mat);
-        dprintINT(iteration);
+        
+        printf("%d: %f\n", iteration, current_S_norm);
+
+        if (fabs(current_S_norm) / max_S_norm < 1e-5 || current_S_norm == 0 || isnan(current_S_norm)) {
+            break;
+        }
     }
 
-    // for (int j = nj-1; j >=0; j--) {
-    //         for (int i = 0; i < ni; i++) {
-    //             if (i == i_LE) {
-    //                 printf("  ");
-    //             }
-    //             double e = current_Q[offset3d(i, j, 3, ni, nj)];
-    //             double rho = current_Q[offset3d(i, j, 0, ni, nj)]; 
-    //             double u, v;
-    //             calculate_u_and_v(&u, &v, current_Q, i, j);
-    //             double p = calculate_p(e, rho, u, v);
-    //             printf("%g ", p);
-    //         }
-    //         printf("\n");
-    //     }
+    for (int j = nj-1; j >=0; j--) {
+            for (int i = 0; i < ni; i++) {
+                if (i == i_LE) {
+                    printf("  ");
+                }
+                double e = current_Q[offset3d(i, j, 3, ni, nj)];
+                double rho = current_Q[offset3d(i, j, 0, ni, nj)]; 
+                double u, v;
+                calculate_u_and_v(&u, &v, current_Q, i, j);
+                double p = calculate_p(e, rho, u, v);
+                printf("%g ", p);
+            }
+            printf("\n");
+        }
 
         // print_layer_of_mat3D(S, 3);
 
@@ -1081,8 +1095,9 @@ void apply_BC(double *Q, double *x_vals_mat, double *y_vals_mat)
         /* e_i,0*/
         e_j0 = p_j0 / (Gamma -1) + 0.5 * rho_j0 * (u_j0 * u_j0 + v_j0 *v_j0);
         p_j0 = calculate_p(e_j0, rho_j0, u_j0, v_j0);
-        printf("%d,%g, %g, %g, %g\n", i,p_j1, p_j0, e_j1, e_j0);
-        printf("%g, %g, %g, %g, %g, %g, %g\n", dxi_dx_j0, dxi_dx_j1, dxi_dy_j0, dxi_dy_j1, deta_dx_j0, deta_dy_j0, J_j0);
+        // printf("%d,%g, %g, %g, %g\n", i,p_j1, p_j0, e_j1, e_j0);
+        // printf("%g, %g, %g, %g, %g, %g, %g\n", dxi_dx_j0, dxi_dx_j1, dxi_dy_j0, dxi_dy_j1, deta_dx_j0, deta_dy_j0, J_j0);
+
 
         Q[offset3d(i, j, 0, ni, nj)] = rho_j0;
         Q[offset3d(i, j, 1, ni, nj)] = rho_j0 * u_j0;
@@ -1168,4 +1183,22 @@ void output_layer_of_mat3D_to_file(FILE *fp, double *data, int layer)
         }
         fprintf(fp, "\n");
     }
+}
+
+double calculate_S_norm(double *S)
+{
+    double sum = 0, value;
+
+    for (int i = 0; i < ni; i++) {
+        for (int j = 0; j < nj; j++) {
+            for (int k = 0; k < 4; k++) {
+                value = S[offset3d(i, j, k, ni, nj)];
+                sum += value * value;
+                // dprintD(value);
+            }
+        }
+    }
+    // dprintD(sum);
+
+    return sqrt(sum);
 }
