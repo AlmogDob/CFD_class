@@ -37,6 +37,9 @@ gamma
 
 epse
 0.06
+
+iterations
+2
 */
 
 #include <stdio.h>
@@ -134,9 +137,11 @@ void initialize(double *Q, double *J_vals_mat, double *dxi_dx_mat,
                 double *deta_dy_mat, double *x_vals_mat, double *y_vals_mat);
 
 /* global variables */
-int ni, nj, max_ni_nj, i_TEL, i_LE, i_TEU, j_TEL, j_LE, j_TEU;
-double Mach_inf, angle_of_attack_deg, angle_of_attack_rad, density,
-environment_pressure, delta_t, Gamma, epse, epsi;
+int ni, nj, max_ni_nj, i_TEL, i_LE, i_TEU, j_TEL = 0, j_LE = 0,
+j_TEU = 0, max_iterations = 1e4;
+
+double Mach_inf, angle_of_attack_deg = 0, angle_of_attack_rad, density = 1.225,     /* default values */
+environment_pressure = 101325, delta_t = 1e-6, Gamma = 1.4, epse = 0.06, epsi;
 
 int main(int argc, char const *argv[])
 {
@@ -363,6 +368,7 @@ int main(int argc, char const *argv[])
     dprintD(Gamma);
     dprintINT(max_ni_nj);
     dprintD(epse);
+    dprintINT(max_iterations);
     printf("--------------------\n");
 
 /*------------------------------------------------------------*/
@@ -371,7 +377,7 @@ int main(int argc, char const *argv[])
                deta_dy_mat, x_vals_mat, y_vals_mat);
     copy_3Dmat_to_3Dmat(first_Q, current_Q);
     
-    for (int iteration = 0; iteration < 6; iteration++) {
+    for (int iteration = 0; iteration < max_iterations; iteration++) {
         current_S_norm = step(A, B, C, D, current_Q, S, W, J_vals_mat,
                               dxi_dx_mat, dxi_dy_mat, deta_dx_mat,
                               deta_dy_mat, s2, drr, drp, rspec, qv, dd);
@@ -538,6 +544,8 @@ void read_input_file(FILE *fp)
             fscanf(fp, "%d", &j_LE);
         } else if (!strcmp(current_word, "j_TEU")) {
             fscanf(fp, "%d", &j_TEU);
+        } else if (!strcmp(current_word, "iterations")) {
+            fscanf(fp, "%d", &max_iterations);
         }
     }
 }
@@ -1052,7 +1060,7 @@ void apply_BC(double *Q, double *J_vals_mat, double *dxi_dx_mat,
               double *dxi_dy_mat, double *deta_dx_mat, double *deta_dy_mat)
 {
     int i, k;
-    double J_j0, u_j1, v_j1, e_j1, rho_j0, rho_j1, p_j0, e_j0, u_j0, v_j0,
+    double J_j0, u_j1, v_j1, p_j1, e_j1, rho_j0, rho_j1, p_j0, e_j0, u_j0, v_j0,
     dxi_dx_j0, dxi_dx_j1, dxi_dy_j0, dxi_dy_j1, deta_dx_j0, deta_dy_j0,
     U1, V1,
     e_iTEU_jTEU, rho_iTEU_jTEU, u_iTEU_jTEU, v_iTEU_jTEU, p_iTEU_jTEU,
@@ -1086,10 +1094,14 @@ void apply_BC(double *Q, double *J_vals_mat, double *dxi_dx_mat,
         
         /* p_i,0 */
         e_j1 = Q[offset3d(i, 1, 3, ni, nj)];
-        p_j0 = calculate_p(e_j1, rho_j1, u_j1, v_j1);
+        p_j1 = calculate_p(e_j1, rho_j1, u_j1, v_j1);
+        p_j0 = p_j1;
 
         /* e_i,0*/
         e_j0 = p_j0 / (Gamma -1) + 0.5 * rho_j0 * (u_j0 * u_j0 + v_j0 *v_j0);
+        p_j0 = calculate_p(e_j0, rho_j0, u_j0, v_j0);
+        // printf("%d,%g, %g, %g, %g\n", i,p_j1, p_j0, e_j1, e_j0);
+        // printf("%g, %g, %g, %g, %g, %g, %g\n", dxi_dx_j0, dxi_dx_j1, dxi_dy_j0, dxi_dy_j1, deta_dx_j0, deta_dy_j0, J_j0);
 
         Q[offset3d(i, 0, 0, ni, nj)] = rho_j0;
         Q[offset3d(i, 0, 1, ni, nj)] = rho_j0 * u_j0;
