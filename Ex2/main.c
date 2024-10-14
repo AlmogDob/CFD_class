@@ -307,7 +307,7 @@ int main(int argc, char const *argv[])
     copy_3Dmat_to_3Dmat(first_Q, current_Q);
 
     
-    for (int iteration = 0; iteration < 1e0; iteration++) {
+    for (int iteration = 0; iteration < 2e4; iteration++) {
         apply_BC(current_Q, x_vals_mat, y_vals_mat);
         RHS(S, W, current_Q, x_vals_mat, y_vals_mat, J_vals_mat, dxi_dx_mat,
             dxi_dy_mat, deta_dx_mat, deta_dy_mat, s2, rspec, qv, dd);
@@ -333,7 +333,7 @@ int main(int argc, char const *argv[])
 
     // int layer = 2;
     // // print_layer_of_mat3D(first_Q, layer);
-    print_layer_of_mat3D(S, 0);
+    print_layer_of_mat3D(current_Q, 0);
     // print_mat2D(dxi_dx_mat);
 
     // for (int i = 0; i < ni; i++) {
@@ -347,14 +347,14 @@ int main(int argc, char const *argv[])
     // }
     // FILE *rho_u_fp = fopen("./results/rho_u.txt", "wt");
     // FILE *rho_v_fp = fopen("./results/rho_v.txt", "wt");
-    // FILE *x_fp = fopen("./results/x_mat.txt", "wt");
-    // FILE *y_fp = fopen("./results/y_mat.txt", "wt");
+    FILE *x_fp = fopen("./results/x_mat.txt", "wt");
+    FILE *y_fp = fopen("./results/y_mat.txt", "wt");
     // FILE *U_fp = fopen("./results/U_mat.txt", "wt");
     // FILE *V_fp = fopen("./results/V_mat.txt", "wt");
     // output_layer_of_mat3D_to_file(rho_u_fp, current_Q, 1);
     // output_layer_of_mat3D_to_file(rho_v_fp, current_Q, 2);
-    // output_mat2D_to_file(x_fp, x_vals_mat);
-    // output_mat2D_to_file(y_fp, y_vals_mat);
+    output_mat2D_to_file(x_fp, x_vals_mat);
+    output_mat2D_to_file(y_fp, y_vals_mat);
     // output_mat2D_to_file(U_fp, U_mat);
     // output_mat2D_to_file(V_fp, V_mat);
     
@@ -530,6 +530,9 @@ void print_layer_of_mat3D(double *data, int layer)
 
     for (j_index = nj - 1; j_index >= 0; j_index--) {
         for (i_index = 0; i_index < ni; i_index++) {
+            if (i_index == i_LE) {
+                printf("   ");
+            }
             printf("%g ", data[offset3d(i_index, j_index, layer, ni, nj)]);
         }
         printf("\n");
